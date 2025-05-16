@@ -1,0 +1,27 @@
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+!pip install gradio
+import gradio as gr
+
+# Load the better model (codegen-2B-mono)
+model_name = "Salesforce/codegen-2B-mono"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name).to("cuda")
+
+def generate_code(prompt):
+    # Add code-specific prompt context
+    input_ids = tokenizer.encode(prompt, return_tensors="pt").to("cuda")
+    # Generate code output
+    output = model.generate(input_ids, max_length=256, temperature=0.5, do_sample=True, top_p=0.95)
+    # Decode output tokens to string
+    generated_code = tokenizer.decode(output[0], skip_special_tokens=True)
+    return generated_code
+
+# Gradio Interface
+gr.Interface(
+    fn=generate_code,
+    inputs=gr.Textbox(lines=2, placeholder="Ask for code e.g. 'Python code to check if a number is prime'"),
+    outputs=gr.Code(language="python"),
+    title="🧑‍💻 GenAI Code Generator",
+    description="Enter a coding problem description and get generated Python code using a GenAI model."
+).launch()
